@@ -13,12 +13,38 @@ function App() {
 
   const fetchWeather = async (e) => {
     e.preventDefault();
+    const apiKey = '332c6cbf5a3c3f1be11e7bd94d300ee0'; // Replace with your actual API key
+    const apiUrl = `https://api.openweathermap.org/data/2.5/forecast`;
+
     try {
-      const response = await axios.get('http://localhost:5000/api/weather', {
-        params: { city },
+      const response = await axios.get(apiUrl, {
+        params: {
+          q: city,
+          appid: apiKey,
+          units: 'metric',
+        },
       });
-      setWeather(response.data);
-      setError('');
+      const data = response.data;
+
+      if (data && data.list) {
+        const hourlyData = data.list.map((item) => ({
+          time: item.dt_txt,
+          temp: item.main.temp,
+        }));
+
+        const weatherData = {
+          city: data.city.name,
+          temperature: data.list[0].main.temp,
+          description: data.list[0].weather[0].description,
+          hourlyData,
+        };
+
+        setWeather(weatherData);
+        setError('');
+      } else {
+        setError('Invalid response from weather API');
+        setWeather(null);
+      }
     } catch (error) {
       console.error('Error fetching weather data:', error.message);
       setError('Failed to fetch weather data. Please try again.');
@@ -26,7 +52,6 @@ function App() {
     }
   };
 
-  // Function to get the appropriate animation based on weather description
   const getWeatherAnimation = (description) => {
     if (description.includes('drizzle') || description.includes('rain')) {
       return rainyAnimation;
@@ -37,14 +62,13 @@ function App() {
     }
   };
 
-  // Function to format the time
   const formatTime = (timestamp) => {
     const date = new Date(timestamp * 1000);
     let hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12;
     const strMinutes = minutes < 10 ? '0' + minutes : minutes;
     return `${hours}:${strMinutes} ${ampm}`;
   };
@@ -66,7 +90,6 @@ function App() {
         {weather && (
           <div>
             <h2>{weather.city}</h2>
-           
             <p>Temperature: {weather.temperature}°C</p>
             <p>Description: {weather.description}</p>
             <div className="weather-animation">
